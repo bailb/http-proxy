@@ -65,17 +65,7 @@ static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
 }
 static size_t save_header(void *buffer,size_t size,size_t nmemb, void *user)
 {
-	size_t sock = (int64_t)user;
-	size_t length = size * nmemb;
-    	size_t ret = 0;
-/*	ret = send(sock, buffer,length,0);
-	printf("save_header[%d][%s]\n",(int64_t)user,buffer);	
-	if (ret != length)
-	{
-	    printf("save_header failed ret = [%d] errno[%d] sock[%d]\n",ret, errno, sock);
-	}
-*/
-	return length;
+	return size*nmemb;
 }
 
 bool requestUrl(CHttpParser *h, int sock)
@@ -135,37 +125,39 @@ void *aConn(void *arg)
 {
     int size;
     int sock = int64_t(static_cast <int*>(arg));
-    int cliSock = -1;
 
     pthread_detach(pthread_self());
     bool keepAlive = false;
-	do{
+    do{
 
-		char *buffer = (char*)malloc(MEM_SIZE);
-		bzero(buffer, MEM_SIZE);
-		size = recv(sock, buffer, MEM_SIZE, 0);
-		if (size == 0)
-		{
-			printf("---------------------\n");
-			return NULL;
-		}
-		else
-		{
-			printf("recv---------------------size[%d]\n",size);
-		}
+	char *buffer = (char*)malloc(MEM_SIZE);
+	bzero(buffer, MEM_SIZE);
+	size = recv(sock, buffer, MEM_SIZE, 0);
+	if (size == 0)
+	{
+		printf("---------------------\n");
+		return NULL;
+	}
+	else
+	{
+		printf("recv---------------------size[%d]\n",size);
+	}
 
-		CHttpParser *httpParser = new CHttpParser();
-		httpParser->parser(buffer);
-		printf("Proxy-conn[%s]\n",httpParser->getValueByKey("Proxy-Connection").c_str());
-		if (httpParser->getValueByKey("Proxy-Connection") == "Keep-Alive")
-		{
-			keepAlive = true;
-		}
-		if (!requestUrl(httpParser, sock))
-		{
-			printf("request error\n");
-		}
-	}while(keepAlive);
+	CHttpParser *httpParser = new CHttpParser();
+	httpParser->parser(buffer);
+	printf("Proxy-conn[%s]\n",httpParser->getValueByKey("Proxy-Connection").c_str());
+	if (httpParser->getValueByKey("Proxy-Connection") == "Keep-Alive")
+	{
+		keepAlive = true;
+	}
+	if (!requestUrl(httpParser, sock))
+	{
+		printf("request error\n");
+	}
+
+   }while(keepAlive);
+
+   return NULL;
 }
 
 
@@ -187,14 +179,12 @@ void on_write(int sock, short event, void* arg)
 
 void on_read(int sock, short event, void* arg)
 {
-    int size;
-    struct sock_ev* ev = (struct sock_ev*)arg;
     pthread_t tid;
-	int error = pthread_create(&tid, NULL,aConn, (void*)sock);
-	if(0 != error)
-		fprintf(stderr, "Couldn't run thread %d error %d\n",sock,error);
+    int error = pthread_create(&tid, NULL,aConn, (void*)sock);
+    if(0 != error)
+	fprintf(stderr, "Couldn't run thread %d error %d\n",sock,error);
     else
-		fprintf(stderr, "Thread %d, gets %d\n", tid, sock);
+	fprintf(stderr, "Thread %d, gets %d\n", tid, (int)sock);
 
 
 }
