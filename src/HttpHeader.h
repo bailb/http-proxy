@@ -32,6 +32,7 @@ class CHttpParser
 	    std::string &getPath();
 	    std::string &getVersion();
 		std::string& getValueByKey(const char *);
+		std::string& getBody();
     private:
 		bool parseRequest(std::string &);
 		bool getPair(const std::string &line, std::string &, std::string &);
@@ -42,6 +43,7 @@ class CHttpParser
 		methodType mMethod;
 		std::string mURI;
 		std::string mVersion;
+		std::string mBody;
 	public:
 		HttpHeader m_Headers;
 

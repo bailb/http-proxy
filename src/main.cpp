@@ -30,36 +30,20 @@ struct sock_ev
     char* buffer;
 };
 
-char *get_ip(char *host){  
-    struct hostent *hent;  
-    int iplen=15;  
-    char *ip=(char *)malloc(iplen+1);  
-    memset(ip,0,iplen+1);  
-    if((hent=gethostbyname(host))==NULL){  
-        perror("Can't get ip");  
-        exit(1);  
-    }  
-    if(inet_ntop(AF_INET,(void *)hent->h_addr_list[0],ip,iplen)==NULL){  
-        perror("Can't resolve host!\n");  
-        exit(1);  
-    }  
-    return ip;  
-}
-
 static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
 {
 	size_t sock = (int64_t)user;
 	size_t length = size * nmemb;
-	char *buf = (char*)buffer;
+	char *buf = (char *)buffer;
     	size_t ret = 0;
 	ret = send(sock, buffer, length, 0);
 	if (ret != length)
 	{
-	    printf("write_data failed[%d][%d][%d]\n",sock,errno,length);
+	    printf("write_data failed[%d][%d][%d]\n",(int)sock,(int)errno,(int)length);
 	}
 	else
 	{
-	    printf("ok[%d]\n",length);
+	    printf("ok[%d]\n",(int)length);
 	}
 	return length;
 }
@@ -77,7 +61,8 @@ bool requestUrl(CHttpParser *h, int sock)
 	struct curl_slist *headers = NULL;
 	printf("sock[%d]\n",sock);
 	curl = curl_easy_init();
-	if(curl) {
+	if(curl) 
+	{
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER,0L);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST,0L);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)sock);
@@ -86,26 +71,37 @@ bool requestUrl(CHttpParser *h, int sock)
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		//curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        	//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+       	//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 		curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
-        	std::string key = "";
-        	std::string value = "";
-       for (HttpHeaderIter it = h->m_Headers.begin(); it != h->m_Headers.end();it ++)
-       {
-         if (it->first != "Proxy-Connection")
-         {
-            key = it->first;
-            value = it->second;
-            headers = curl_slist_append(headers,(key+":"+value).c_str());
-
-         }
-
-       }
-       if (headers)
-       {
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-       }
-
+       	std::string key = "";
+       	std::string value = "";
+	       
+		for (HttpHeaderIter it = h->m_Headers.begin(); it != h->m_Headers.end();it ++)
+	    {
+	        if (it->first != "Proxy-Connection")
+		    {
+		       key = it->first;
+		       value = it->second;
+		       headers = curl_slist_append(headers,(key+":"+value).c_str());
+		    }
+	    }
+	        
+		if (headers)
+	    {
+	        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	    }
+		if (h->getMethod() == HTTP_REQ_GET)
+		{
+		// do nothing
+		}
+		else if (h->getMethod()== HTTP_REQ_POST)
+		{
+			curl_easy_setopt(curl, CURLOPT_POST, 1L);
+			if (!h->getBody().empty())
+			{
+				 curl_easy_setopt(curl, CURLOPT_POSTFIELDS, h->getBody().c_str());
+			}
+		}
 
 		res = curl_easy_perform(curl);
 		if(res != CURLE_OK)
@@ -117,7 +113,7 @@ bool requestUrl(CHttpParser *h, int sock)
 		curl_easy_cleanup(curl);
 	}
 
-    return true;
+        return true;
 
 }
 
@@ -135,12 +131,12 @@ void *aConn(void *arg)
 	size = recv(sock, buffer, MEM_SIZE, 0);
 	if (size == 0)
 	{
-		printf("---------------------\n");
+		printf("recv error[%d]\n",errno);
 		return NULL;
 	}
 	else
 	{
-		printf("recv---------------------size[%d]\n",size);
+		printf("recv size[%d]\n",size);
 	}
 
 	CHttpParser *httpParser = new CHttpParser();

@@ -19,6 +19,11 @@ methodType CHttpParser::getMethod()
 {
 	return mMethod;
 }
+std::string& CHttpParser::getBody() 
+{
+	return mBody;
+}
+
 std::string &CHttpParser::getPath()
 {
 	return mURI;
@@ -160,6 +165,13 @@ bool CHttpParser::parser(const char *buffer)
 
 		if (0 == str.compare(0,strlen("\r\n"),"\r\n"))
 		{ /* BODY */
+			printf("mBody\n");
+			if (str.length() > strlen("\r\n"))
+			{
+				mBody = str.substr(pos+strlen("\r\n"));
+				printf("mBody:%s",mBody.c_str());
+			}
+
 			break;
 		}
 
