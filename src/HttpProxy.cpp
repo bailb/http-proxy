@@ -16,6 +16,7 @@
 #include<unistd.h>
 #include<sys/stat.h>
 #include<fcntl.h>
+
 #define BACKLOG 25
 #define MEM_SIZE 1024*10
 
@@ -31,23 +32,57 @@ CHttpProxy::~CHttpProxy()
 
 void CHttpProxy::onRead(int sock, short event, void* arg)
 {
-
-
+	CHttpProxy *hp = (CHttpProxy*)arg;
+	hp->on_Read(sock,event);
 }
 
 void CHttpProxy::onAccept(int sock, short event, void* arg)
 {
+	CHttpProxy *hp = (CHttpProxy*)arg;
+	hp->on_Accept(sock,event);
+}
 
+void CHttpProxy::on_Read(int sock, short event)
+{
+	CHttpConnection *hCon = m_con_map[sock];
+	if (!hCon)
+	{
+		printf("onRead error,There is no this connection[%d]\n",sock);
+	}
+	else
+	{
+		hCon->start();
+	}
+}
 
+void CHttpProxy::on_Accept(int sock, short event)
+{
+	
+	struct sockaddr_in cli_addr;
+	int newfd, sin_size;
+
+	struct event* ConEv = NULL;
+
+	sin_size = sizeof(struct sockaddr_in);
+	newfd = accept(sock, (struct sockaddr*)&cli_addr, (socklen_t*)&sin_size);
+	
+	CHttpConnection *hCon = new CHttpConnection(newfd);
+	event_set(ConEv, newfd, EV_READ, onRead, (void*)this);
+	if (!addEvent(ConEv))
+    {
+        printf("addEvent error\n");
+    }
+
+	m_con_map[newfd]=hCon;
 }
 
 static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
 {
     size_t sock = (int64_t)user;
     size_t length = size * nmemb;
-    char *buf = (char *)buffer;
-        size_t ret = 0;
+    size_t ret = 0;
     ret = send(sock, buffer, length, 0);
+
     if (ret != length)
     {
         printf("write_data failed[%d][%d][%d]\n",(int)sock,(int)errno,(int)length);
@@ -56,6 +91,7 @@ static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
     {
         printf("ok[%d]\n",(int)length);
     }
+
     return length;
 }
 
@@ -64,17 +100,15 @@ bool CHttpConnection::requestUrl()
 	CURL *curl;
 	CURLcode res;
 	CHttpParser *h = m_http_parser;
-	int sock = m_sock;
 
 	std::string url = h->getPath();
 	struct curl_slist *headers = NULL;
-	printf("sock[%d]\n",sock);
 	curl = curl_easy_init();
 	if(curl) 
 	{
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER,0L);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST,0L);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)sock);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)m_sock);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
@@ -110,8 +144,7 @@ bool CHttpConnection::requestUrl()
 
 		res = curl_easy_perform(curl);
 		if(res != CURLE_OK)
-			fprintf(stderr, "curl_easy_perform() failed: %s\n",
-            curl_easy_strerror(res));
+			fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
         /* always cleanup */
         if (headers)
             curl_slist_free_all(headers);
@@ -124,7 +157,6 @@ bool CHttpConnection::requestUrl()
 void CHttpConnection::run()
 {
     int size;
-
     pthread_detach(pthread_self());
     bool keepAlive = false;
     do{
@@ -157,13 +189,14 @@ void CHttpConnection::run()
    }while(keepAlive);
 
 }
+
 void CHttpProxy::start()
 {
     struct sockaddr_in my_addr;
-    int sock;
-
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    int sock = 0;
     int yes = 1;
+    
+	sock = socket(AF_INET, SOCK_STREAM, 0);
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
     memset(&my_addr, 0, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
@@ -171,7 +204,7 @@ void CHttpProxy::start()
     my_addr.sin_addr.s_addr = INADDR_ANY;
     bind(sock, (struct sockaddr*)&my_addr, sizeof(struct sockaddr));
     listen(sock, BACKLOG);
-    struct event *listen_ev;
+    struct event *listen_ev = NULL;
     event_set(listen_ev, sock, EV_READ|EV_PERSIST, onAccept, (void*)this);
 	
 	if (!addEvent(listen_ev))
@@ -182,9 +215,10 @@ void CHttpProxy::start()
 	CEventServer::start();
 
 }
-CHttpConnection::CHttpConnection()
-{
 
+CHttpConnection::CHttpConnection(int sock)
+{
+	m_sock = sock;
 }
 CHttpConnection::~CHttpConnection()
 {

@@ -19,7 +19,7 @@ struct CEventPair {
 
 class CHttpConnection : public CThread {
 	public:
-    	CHttpConnection();
+    	CHttpConnection(int sock);
     	~CHttpConnection();
 		virtual void run();
 	private:
@@ -37,7 +37,9 @@ class CHttpProxy : public CEventServer {
 		~CHttpProxy();
 	public:
 		static void onAccept(int sock, short event, void* arg);
+		void on_Accept(int sock, short event);
 		static void onRead(int sock, short event, void* arg);
+		void on_Read(int sock, short event);
 		void start();
 		void stop();
 	private:

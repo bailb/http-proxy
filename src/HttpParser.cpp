@@ -176,7 +176,10 @@ bool CHttpParser::parser(const char *buffer)
 
     }
 
+	return true;
 }
 
 }
+
+
 
