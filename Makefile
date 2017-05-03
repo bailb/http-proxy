@@ -20,7 +20,7 @@ LDFLAGS+=-L ./Depends/lib/libevent/linux -levent
 ##LDFLAGS+=-L ./Depends/lib/libcurl -lcurl
 LDFLAGS+=-lcurl
 
-SRC_PATH := src 
+SRC_PATH := src src/utils
 #src/utils
 SRC_FILE_CPP := $(foreach dir, ${SRC_PATH}, $(wildcard $(dir)/*.cpp))
 LIB_CPP_OBJS = $(patsubst %.cpp, %.o,${SRC_FILE_CPP})

@@ -1,14 +1,16 @@
 #ifndef __EVENT_SERVER__
 #define __EVENT_SERVER__
 #include"event.h"
+#include"utils/Thread.h"
 
-class CEventServer {
+class CEventServer:public CThread {
 	public:
 		CEventServer();
 		~CEventServer();
     public:
-		bool addEvent(int fd,short event);
-		bool removeEvent(int fd, short event);
+		bool addEvent(struct event *listen_ev);
+		bool delEvent(struct event *listen_ev);
+		virtual void run();
 	private:
 		event_base* m_event_handler;
 };

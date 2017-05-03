@@ -1,19 +1,24 @@
 #ifndef __HTTP__PROXY__
 #define __HTTP__PROXY__
+
 #include<stdio.h>
 #include<string>
+#include<map>
 
-class HttpConnection {//: public CThread {
+#include "utils/Thread.h"
+#include "EventServer.h"
+
+class CHttpConnection : public CThread {
 public:
-    HttpConnection();
-    ~HttpConnection();
+    CHttpConnection();
+    ~CHttpConnection();
 private:
     virtual void run();
 private:
     int fd;
 };
 
-class CHttpProxy {
+class CHttpProxy : public CEventServer {
 	public:
 		CHttpProxy();
 		~CHttpProxy();
@@ -21,4 +26,5 @@ class CHttpProxy {
 		void start();
 		void stop();
 };
+
 #endif
