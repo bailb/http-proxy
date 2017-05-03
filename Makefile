@@ -33,5 +33,5 @@ $(LIB_TARGET) : $(LIB_CPP_OBJS)
 %.o: %.cpp
 	$(CPP) -c $(CFLAGS) $(CFLAGS_NDBG) $< -o $@
 clean:
-	rm src/*.o
+	rm src/*.o -f
 	rm $(LIB_TARGET)

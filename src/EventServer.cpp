@@ -18,6 +18,7 @@ CEventServer::~CEventServer()
 
 bool CEventServer::addEvent(struct event* care)
 {
+	event_base_set(m_event_handler, care);
     return event_add(care, NULL)?false:true;
 }
 
