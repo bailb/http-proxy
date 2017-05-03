@@ -1,10 +1,10 @@
 #include"EventServer.h"
 CEventServer::CEventServer():m_event_handler(NULL)
 {
-	if (!m_event_handler)
-	{
-		m_event_handler = event_base_new();
-	}
+    if (!m_event_handler)
+    {
+        m_event_handler = event_base_new();
+    }
 }
 
 CEventServer::~CEventServer()
@@ -18,7 +18,7 @@ CEventServer::~CEventServer()
 
 bool CEventServer::addEvent(struct event* care)
 {
-	event_base_set(m_event_handler, care);
+    event_base_set(m_event_handler, care);
     return event_add(care, NULL)?false:true;
 }
 

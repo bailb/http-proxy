@@ -22,7 +22,7 @@
 
 CHttpProxy::CHttpProxy()
 {
-	printf("CHttpProxy\r\n");
+    printf("CHttpProxy\r\n");
 }
 
 CHttpProxy::~CHttpProxy()
@@ -32,48 +32,48 @@ CHttpProxy::~CHttpProxy()
 
 void CHttpProxy::onRead(int sock, short event, void* arg)
 {
-	CHttpProxy *hp = (CHttpProxy*)arg;
-	hp->on_Read(sock,event);
+    CHttpProxy *hp = (CHttpProxy*)arg;
+    hp->on_Read(sock,event);
 }
 
 void CHttpProxy::onAccept(int sock, short event, void* arg)
 {
-	CHttpProxy *hp = (CHttpProxy*)arg;
-	hp->on_Accept(sock,event);
+    CHttpProxy *hp = (CHttpProxy*)arg;
+    hp->on_Accept(sock,event);
 }
 
 void CHttpProxy::on_Read(int sock, short event)
 {
-	CHttpConnection *hCon = m_con_map[sock];
-	if (!hCon)
-	{
-		printf("onRead error,There is no this connection[%d]\n",sock);
-	}
-	else
-	{
-		hCon->start();
-	}
+    CHttpConnection *hCon = m_con_map[sock];
+    if (!hCon)
+    {
+        printf("onRead error,There is no this connection[%d]\n",sock);
+    }
+    else
+    {
+        hCon->start();
+    }
 }
 
 void CHttpProxy::on_Accept(int sock, short event)
 {
-	
-	struct sockaddr_in cli_addr;
-	int newfd, sin_size;
+    
+    struct sockaddr_in cli_addr;
+    int newfd, sin_size;
 
-	struct event* ConEv = NULL;
+    struct event* ConEv = NULL;
 
-	sin_size = sizeof(struct sockaddr_in);
-	newfd = accept(sock, (struct sockaddr*)&cli_addr, (socklen_t*)&sin_size);
-	
-	CHttpConnection *hCon = new CHttpConnection(newfd);
-	event_set(ConEv, newfd, EV_READ, onRead, (void*)this);
-	if (!addEvent(ConEv))
+    sin_size = sizeof(struct sockaddr_in);
+    newfd = accept(sock, (struct sockaddr*)&cli_addr, (socklen_t*)&sin_size);
+    
+    CHttpConnection *hCon = new CHttpConnection(newfd);
+    event_set(ConEv, newfd, EV_READ, onRead, (void*)this);
+    if (!addEvent(ConEv))
     {
         printf("addEvent error\n");
     }
 
-	m_con_map[newfd]=hCon;
+    m_con_map[newfd]=hCon;
 }
 
 static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
@@ -97,61 +97,61 @@ static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
 
 bool CHttpConnection::requestUrl()
 {
-	CURL *curl;
-	CURLcode res;
-	CHttpParser *h = m_http_parser;
+    CURL *curl;
+    CURLcode res;
+    CHttpParser *h = m_http_parser;
 
-	std::string url = h->getPath();
-	struct curl_slist *headers = NULL;
-	curl = curl_easy_init();
-	if(curl) 
-	{
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER,0L);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST,0L);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)m_sock);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-		curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
-       	std::string key = "";
-       	std::string value = "";
-	       
-		for (HttpHeaderIter it = h->m_Headers.begin(); it != h->m_Headers.end();it ++)
-	    {
-	        if (it->first != "Proxy-Connection")
-		    {
-		       key = it->first;
-		       value = it->second;
-		       headers = curl_slist_append(headers,(key+":"+value).c_str());
-		    }
-	    }
-	        
-		if (headers)
-	    {
-	        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-	    }
-		if (h->getMethod() == HTTP_REQ_GET)
-		{
-		// do nothing
-		}
-		else if (h->getMethod()== HTTP_REQ_POST)
-		{
-			curl_easy_setopt(curl, CURLOPT_POST, 1L);
-			if (!h->getBody().empty())
-			{
-				 curl_easy_setopt(curl, CURLOPT_POSTFIELDS, h->getBody().c_str());
-			}
-		}
+    std::string url = h->getPath();
+    struct curl_slist *headers = NULL;
+    curl = curl_easy_init();
+    if(curl) 
+    {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER,0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST,0L);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)m_sock);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
+           std::string key = "";
+           std::string value = "";
+           
+        for (HttpHeaderIter it = h->m_Headers.begin(); it != h->m_Headers.end();it ++)
+        {
+            if (it->first != "Proxy-Connection")
+            {
+               key = it->first;
+               value = it->second;
+               headers = curl_slist_append(headers,(key+":"+value).c_str());
+            }
+        }
+            
+        if (headers)
+        {
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        }
+        if (h->getMethod() == HTTP_REQ_GET)
+        {
+        // do nothing
+        }
+        else if (h->getMethod()== HTTP_REQ_POST)
+        {
+            curl_easy_setopt(curl, CURLOPT_POST, 1L);
+            if (!h->getBody().empty())
+            {
+                 curl_easy_setopt(curl, CURLOPT_POSTFIELDS, h->getBody().c_str());
+            }
+        }
 
-		res = curl_easy_perform(curl);
-		if(res != CURLE_OK)
-			fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK)
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
         /* always cleanup */
         if (headers)
             curl_slist_free_all(headers);
         curl_easy_cleanup(curl);
     }
 
-	return true;
+    return true;
 }
 
 void CHttpConnection::run()
@@ -161,30 +161,30 @@ void CHttpConnection::run()
     bool keepAlive = false;
     do{
 
-		char *buffer = (char*)malloc(MEM_SIZE);
-		bzero(buffer, MEM_SIZE);
-		size = recv(m_sock, buffer, MEM_SIZE, 0);
-		if (size == 0)
-		{
-			printf("recv error[%d]\n",errno);
-			return;
-		}
-		else
-		{
-			printf("recv size[%d]\n",size);
-		}
+        char *buffer = (char*)malloc(MEM_SIZE);
+        bzero(buffer, MEM_SIZE);
+        size = recv(m_sock, buffer, MEM_SIZE, 0);
+        if (size == 0)
+        {
+            printf("recv error[%d]\n",errno);
+            return;
+        }
+        else
+        {
+            printf("recv size[%d]\n",size);
+        }
 
-		m_http_parser = new CHttpParser();
-		m_http_parser->parser(buffer);
-		printf("Proxy-conn[%s]\n",m_http_parser->getValueByKey("Proxy-Connection").c_str());
-		if (m_http_parser->getValueByKey("Proxy-Connection") == "Keep-Alive")
-		{
-			keepAlive = true;
-		}
-		if (!requestUrl())
-		{
-			printf("request error\n");
-		}
+        m_http_parser = new CHttpParser();
+        m_http_parser->parser(buffer);
+        printf("Proxy-conn[%s]\n",m_http_parser->getValueByKey("Proxy-Connection").c_str());
+        if (m_http_parser->getValueByKey("Proxy-Connection") == "Keep-Alive")
+        {
+            keepAlive = true;
+        }
+        if (!requestUrl())
+        {
+            printf("request error\n");
+        }
 
    }while(keepAlive);
 
@@ -196,7 +196,7 @@ void CHttpProxy::start()
     int sock = 0;
     int yes = 1;
     
-	sock = socket(AF_INET, SOCK_STREAM, 0);
+    sock = socket(AF_INET, SOCK_STREAM, 0);
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
     memset(&my_addr, 0, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
@@ -206,19 +206,19 @@ void CHttpProxy::start()
     listen(sock, BACKLOG);
     struct event *listen_ev = NULL;
     event_set(listen_ev, sock, EV_READ|EV_PERSIST, onAccept, (void*)this);
-	
-	if (!addEvent(listen_ev))
-	{
-		printf("addEvent error\n");
-	}
+    
+    if (!addEvent(listen_ev))
+    {
+        printf("addEvent error\n");
+    }
 
-	CEventServer::start();
+    CEventServer::start();
 
 }
 
 CHttpConnection::CHttpConnection(int sock)
 {
-	m_sock = sock;
+    m_sock = sock;
 }
 CHttpConnection::~CHttpConnection()
 {

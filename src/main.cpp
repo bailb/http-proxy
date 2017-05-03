@@ -32,85 +32,85 @@ struct sock_ev
 
 static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
 {
-	size_t sock = (int64_t)user;
-	size_t length = size * nmemb;
-	char *buf = (char *)buffer;
-    	size_t ret = 0;
-	ret = send(sock, buffer, length, 0);
-	if (ret != length)
-	{
-	    printf("write_data failed[%d][%d][%d]\n",(int)sock,(int)errno,(int)length);
-	}
-	else
-	{
-	    printf("ok[%d]\n",(int)length);
-	}
-	return length;
+    size_t sock = (int64_t)user;
+    size_t length = size * nmemb;
+    char *buf = (char *)buffer;
+        size_t ret = 0;
+    ret = send(sock, buffer, length, 0);
+    if (ret != length)
+    {
+        printf("write_data failed[%d][%d][%d]\n",(int)sock,(int)errno,(int)length);
+    }
+    else
+    {
+        printf("ok[%d]\n",(int)length);
+    }
+    return length;
 }
 
 static size_t save_header(void *buffer,size_t size,size_t nmemb, void *user)
 {
-	return size*nmemb;
+    return size*nmemb;
 }
 
 bool requestUrl(CHttpParser *h, int sock)
 {
 
-	CURL *curl;
-	CURLcode res;
-	std::string url = h->getPath();
-	struct curl_slist *headers = NULL;
-	printf("sock[%d]\n",sock);
-	curl = curl_easy_init();
-	if(curl) 
-	{
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER,0L);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST,0L);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)sock);
-		curl_easy_setopt(curl, CURLOPT_HEADER,(void*)sock);
-		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,save_header);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-		curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
-       	std::string key = "";
-       	std::string value = "";
-	       
-		for (HttpHeaderIter it = h->m_Headers.begin(); it != h->m_Headers.end();it ++)
-	    {
-	        if (it->first != "Proxy-Connection")
-		    {
-		       key = it->first;
-		       value = it->second;
-		       headers = curl_slist_append(headers,(key+":"+value).c_str());
-		    }
-	    }
-	        
-		if (headers)
-	    {
-	        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-	    }
-		if (h->getMethod() == HTTP_REQ_GET)
-		{
-		// do nothing
-		}
-		else if (h->getMethod()== HTTP_REQ_POST)
-		{
-			curl_easy_setopt(curl, CURLOPT_POST, 1L);
-			if (!h->getBody().empty())
-			{
-				 curl_easy_setopt(curl, CURLOPT_POSTFIELDS, h->getBody().c_str());
-			}
-		}
+    CURL *curl;
+    CURLcode res;
+    std::string url = h->getPath();
+    struct curl_slist *headers = NULL;
+    printf("sock[%d]\n",sock);
+    curl = curl_easy_init();
+    if(curl) 
+    {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER,0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST,0L);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)sock);
+        curl_easy_setopt(curl, CURLOPT_HEADER,(void*)sock);
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,save_header);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
+           std::string key = "";
+           std::string value = "";
+           
+        for (HttpHeaderIter it = h->m_Headers.begin(); it != h->m_Headers.end();it ++)
+        {
+            if (it->first != "Proxy-Connection")
+            {
+               key = it->first;
+               value = it->second;
+               headers = curl_slist_append(headers,(key+":"+value).c_str());
+            }
+        }
+            
+        if (headers)
+        {
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        }
+        if (h->getMethod() == HTTP_REQ_GET)
+        {
+        // do nothing
+        }
+        else if (h->getMethod()== HTTP_REQ_POST)
+        {
+            curl_easy_setopt(curl, CURLOPT_POST, 1L);
+            if (!h->getBody().empty())
+            {
+                 curl_easy_setopt(curl, CURLOPT_POSTFIELDS, h->getBody().c_str());
+            }
+        }
 
-		res = curl_easy_perform(curl);
-		if(res != CURLE_OK)
-			fprintf(stderr, "curl_easy_perform() failed: %s\n",
-			curl_easy_strerror(res));
-		/* always cleanup */
-		if (headers)
-		    curl_slist_free_all(headers);
-		curl_easy_cleanup(curl);
-	}
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK)
+            fprintf(stderr, "curl_easy_perform() failed: %s\n",
+            curl_easy_strerror(res));
+        /* always cleanup */
+        if (headers)
+            curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
 
         return true;
 
@@ -125,30 +125,30 @@ void *aConn(void *arg)
     bool keepAlive = false;
     do{
 
-	char *buffer = (char*)malloc(MEM_SIZE);
-	bzero(buffer, MEM_SIZE);
-	size = recv(sock, buffer, MEM_SIZE, 0);
-	if (size == 0)
-	{
-		printf("recv error[%d]\n",errno);
-		return NULL;
-	}
-	else
-	{
-		printf("recv size[%d]\n",size);
-	}
+    char *buffer = (char*)malloc(MEM_SIZE);
+    bzero(buffer, MEM_SIZE);
+    size = recv(sock, buffer, MEM_SIZE, 0);
+    if (size == 0)
+    {
+        printf("recv error[%d]\n",errno);
+        return NULL;
+    }
+    else
+    {
+        printf("recv size[%d]\n",size);
+    }
 
-	CHttpParser *httpParser = new CHttpParser();
-	httpParser->parser(buffer);
-	printf("Proxy-conn[%s]\n",httpParser->getValueByKey("Proxy-Connection").c_str());
-	if (httpParser->getValueByKey("Proxy-Connection") == "Keep-Alive")
-	{
-		keepAlive = true;
-	}
-	if (!requestUrl(httpParser, sock))
-	{
-		printf("request error\n");
-	}
+    CHttpParser *httpParser = new CHttpParser();
+    httpParser->parser(buffer);
+    printf("Proxy-conn[%s]\n",httpParser->getValueByKey("Proxy-Connection").c_str());
+    if (httpParser->getValueByKey("Proxy-Connection") == "Keep-Alive")
+    {
+        keepAlive = true;
+    }
+    if (!requestUrl(httpParser, sock))
+    {
+        printf("request error\n");
+    }
 
    }while(keepAlive);
 
@@ -177,9 +177,9 @@ void on_read(int sock, short event, void* arg)
     pthread_t tid;
     int error = pthread_create(&tid, NULL,aConn, (void*)sock);
     if(0 != error)
-	fprintf(stderr, "Couldn't run thread %d error %d\n",sock,error);
+    fprintf(stderr, "Couldn't run thread %d error %d\n",sock,error);
     else
-	fprintf(stderr, "Thread %d, gets %d\n", tid, (int)sock);
+    fprintf(stderr, "Thread %d, gets %d\n", tid, (int)sock);
 
 
 }
