@@ -112,9 +112,15 @@ bool CHttpParser::getPair(const std::string &line, std::string &key, std::string
     return true;
 }
 
-std::string & CHttpParser::getValueByKey(const char *key)
+bool CHttpParser::getValueByKey(const char *key, std::string &value)
 {
-    return this->m_Headers[key];
+	HttpHeaderIter it = this->m_Headers.find(key);
+	if (it != m_Headers.end()) {
+		value = it->second;
+		return true;
+	}
+	
+	return false;
 }
 
 bool CHttpParser::parser(const char *buffer)

@@ -140,11 +140,16 @@ void *aConn(void *arg)
 
     CHttpParser *httpParser = new CHttpParser();
     httpParser->parser(buffer);
-    printf("Proxy-conn[%s]\n",httpParser->getValueByKey("Proxy-Connection").c_str());
-    if (httpParser->getValueByKey("Proxy-Connection") == "Keep-Alive")
-    {
-        keepAlive = true;
-    }
+	
+	std::string alive = "";
+	if (httpParser->getValueByKey("Proxy-Connection",alive)) 
+	{
+	    if (alive == "Keep-Alive")
+		{
+			keepAlive = true;
+		}
+	}
+ 
     if (!requestUrl(httpParser, sock))
     {
         printf("request error\n");

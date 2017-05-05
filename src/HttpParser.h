@@ -31,7 +31,7 @@ class CHttpParser
         methodType getMethod();
         std::string &getPath();
         std::string &getVersion();
-        std::string& getValueByKey(const char *);
+        bool getValueByKey(const char *, std::string &value);
         std::string& getBody();
     private:
         bool parseRequest(std::string &);

@@ -112,8 +112,8 @@ bool CHttpConnection::requestUrl()
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
-           std::string key = "";
-           std::string value = "";
+        std::string key = "";
+        std::string value = "";
            
         for (HttpHeaderIter it = h->m_Headers.begin(); it != h->m_Headers.end();it ++)
         {
@@ -176,11 +176,15 @@ void CHttpConnection::run()
 
         m_http_parser = new CHttpParser();
         m_http_parser->parser(buffer);
-        printf("Proxy-conn[%s]\n",m_http_parser->getValueByKey("Proxy-Connection").c_str());
-        if (m_http_parser->getValueByKey("Proxy-Connection") == "Keep-Alive")
-        {
-            keepAlive = true;
-        }
+		std::string alive = "";
+		if ( m_http_parser->getValueByKey("Proxy-Connection",alive))
+		{
+			if (alive == "Keep-Alive")
+			{
+				keepAlive = true;
+			}
+		}
+
         if (!requestUrl())
         {
             printf("request error\n");
