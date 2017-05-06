@@ -34,6 +34,7 @@ typedef std::map<int, CHttpConnection *> ConMap;
 class CHttpProxy : public CEventServer {
     public:
         CHttpProxy();
+		CHttpProxy(int port);
         ~CHttpProxy();
     public:
         static void onAccept(int sock, short event, void* arg);

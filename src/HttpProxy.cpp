@@ -22,7 +22,12 @@
 
 CHttpProxy::CHttpProxy()
 {
-    printf("CHttpProxy\r\n");
+
+}
+
+CHttpProxy::CHttpProxy(int port):m_port(port)
+{
+    printf("CHttpProxy  port[%d]\r\n",port);
 }
 
 CHttpProxy::~CHttpProxy()
@@ -32,18 +37,21 @@ CHttpProxy::~CHttpProxy()
 
 void CHttpProxy::onRead(int sock, short event, void* arg)
 {
+	printf("onRead");
     CHttpProxy *hp = (CHttpProxy*)arg;
     hp->on_Read(sock,event);
 }
 
 void CHttpProxy::onAccept(int sock, short event, void* arg)
 {
+	printf("onAccept\n");
     CHttpProxy *hp = (CHttpProxy*)arg;
     hp->on_Accept(sock,event);
 }
 
 void CHttpProxy::on_Read(int sock, short event)
 {
+	printf("on_read\n");
     CHttpConnection *hCon = m_con_map[sock];
     if (!hCon)
     {
@@ -60,20 +68,52 @@ void CHttpProxy::on_Accept(int sock, short event)
     
     struct sockaddr_in cli_addr;
     int newfd, sin_size;
-
-    struct event* ConEv = NULL;
-
-    sin_size = sizeof(struct sockaddr_in);
+    
+	sin_size = sizeof(struct sockaddr_in);
     newfd = accept(sock, (struct sockaddr*)&cli_addr, (socklen_t*)&sin_size);
     
-    CHttpConnection *hCon = new CHttpConnection(newfd);
+    struct event *ConEv = (struct event*)malloc(sizeof(struct event));
+	
+	CHttpConnection *hCon = new CHttpConnection(newfd);
     event_set(ConEv, newfd, EV_READ, onRead, (void*)this);
     if (!addEvent(ConEv))
+    {
+        printf("addEvent error \n");
+    }
+
+	printf("-----on_Accept------newfd[%d]\n",newfd);
+    m_con_map[newfd]=hCon;
+}
+
+void CHttpProxy::start()
+{
+    struct sockaddr_in my_addr;
+    int sock = 0;
+    int yes = 1;
+    
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+    memset(&my_addr, 0, sizeof(my_addr));
+    my_addr.sin_family = AF_INET;
+    my_addr.sin_port = htons(m_port);
+    my_addr.sin_addr.s_addr = INADDR_ANY;
+    bind(sock, (struct sockaddr*)&my_addr, sizeof(struct sockaddr));
+    listen(sock, BACKLOG);
+   
+	struct event *listen_ev = (struct event*)malloc(sizeof(struct event));
+	
+	event_set(listen_ev, sock, EV_READ|EV_PERSIST, onAccept, (void*)this);
+    if (!addEvent(listen_ev))
     {
         printf("addEvent error\n");
     }
 
-    m_con_map[newfd]=hCon;
+    CEventServer::start();
+}
+
+static size_t save_header(void *buffer,size_t size,size_t nmemb, void *user)
+{
+    return size*nmemb;
 }
 
 static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
@@ -81,8 +121,8 @@ static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
     size_t sock = (int64_t)user;
     size_t length = size * nmemb;
     size_t ret = 0;
-    ret = send(sock, buffer, length, 0);
-
+    
+	ret = send(sock, buffer, length, 0);
     if (ret != length)
     {
         printf("write_data failed[%d][%d][%d]\n",(int)sock,(int)errno,(int)length);
@@ -111,7 +151,10 @@ bool CHttpConnection::requestUrl()
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)m_sock);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_HEADER,(void*)m_sock);
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,save_header);
         curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
         std::string key = "";
         std::string value = "";
            
@@ -144,7 +187,9 @@ bool CHttpConnection::requestUrl()
 
         res = curl_easy_perform(curl);
         if(res != CURLE_OK)
+		{
             fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+		}
         /* always cleanup */
         if (headers)
             curl_slist_free_all(headers);
@@ -194,31 +239,7 @@ void CHttpConnection::run()
 
 }
 
-void CHttpProxy::start()
-{
-    struct sockaddr_in my_addr;
-    int sock = 0;
-    int yes = 1;
-    
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-    memset(&my_addr, 0, sizeof(my_addr));
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(m_port);
-    my_addr.sin_addr.s_addr = INADDR_ANY;
-    bind(sock, (struct sockaddr*)&my_addr, sizeof(struct sockaddr));
-    listen(sock, BACKLOG);
-    struct event *listen_ev = NULL;
-    event_set(listen_ev, sock, EV_READ|EV_PERSIST, onAccept, (void*)this);
-    
-    if (!addEvent(listen_ev))
-    {
-        printf("addEvent error\n");
-    }
 
-    CEventServer::start();
-
-}
 
 CHttpConnection::CHttpConnection(int sock)
 {
