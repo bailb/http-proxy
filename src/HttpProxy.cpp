@@ -154,7 +154,7 @@ bool CHttpConnection::requestUrl()
         curl_easy_setopt(curl, CURLOPT_HEADER,(void*)m_sock);
         curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,save_header);
         curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
-		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+//		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
         std::string key = "";
         std::string value = "";
            
