@@ -111,11 +111,6 @@ void CHttpProxy::start()
     CEventServer::start();
 }
 
-static size_t save_header(void *buffer,size_t size,size_t nmemb, void *user)
-{
-    return size*nmemb;
-}
-
 static size_t write_data(void *buffer, size_t size, size_t nmemb, void *user)
 {
     size_t sock = (int64_t)user;
@@ -151,8 +146,7 @@ bool CHttpConnection::requestUrl()
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)m_sock);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_HEADER,(void*)m_sock);
-        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION,save_header);
+        curl_easy_setopt(curl, CURLOPT_HEADER,1L);
         curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 0L);
 //		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
         std::string key = "";
